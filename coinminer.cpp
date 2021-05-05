@@ -10,13 +10,7 @@
 using namespace std;
 using namespace std::chrono;
 
-int RandInt(int low, int high) {
-  char c = low + std::rand() % (high - low + 1);
-  while (c == '"' || c == '\\' || c=='`') {
-    c = low + std::rand() % (high - low + 1);
-  }
-  return c;
-}
+inline int RandInt(int low, int high) {return low + std::rand() % (high - low + 1);}
 
 inline void append(char* s, char c) {
   int len = strlen(s);
@@ -30,7 +24,9 @@ class Miner{
   int tmstp=0;
   unsigned char* digest;
   char* nonce;
+  char endToken[29];
 
+  void mine(int minToPrint);
   void benchmark();
   int countCOccurences(unsigned char* digest){
     char* hexDigest =(char *)malloc(SHA_DIGEST_LENGTH*2+1);
@@ -68,8 +64,37 @@ class CoinMiner: public Miner{
     tmstp = std::chrono::milliseconds(std::time(NULL)).count();
     unsigned char d[SHA_DIGEST_LENGTH];
     digest = d;
+    endToken[0]= '\0';
+    strcat(endToken, "-FLY-CC1.0-");
+    char* p = &(endToken[11]);
+    sprintf(p, "%d", tmstp);
+    strcat(endToken, "-0f0f0f");
   }
-
+  CoinMiner(char* tri){
+    tmstp = std::chrono::milliseconds(std::time(NULL)).count();
+    unsigned char d[SHA_DIGEST_LENGTH];
+    digest = d;
+    endToken[0]= '\0';
+    strcat(endToken, "-");
+    strcat(endToken, tri);
+    strcat(endToken, "-CC1.0-");
+    char* p = &(endToken[11]);
+    sprintf(p, "%d", tmstp);
+    strcat(endToken, "-0f0f0f");    
+  }
+  void mine(int minToPrint){
+    printf("%d", minToPrint);
+    while(true){
+      nonce = this->generateNonce();
+      generateHash(nonce, digest, tmstp);
+      int occur = countCOccurences(digest);
+      if (occur >= minToPrint){
+        printf("%s\n",nonce);
+        printDigest(digest);
+      }
+      free(nonce);
+    }
+  }
   void benchmark(){
     auto start = std::chrono::system_clock::now();
     auto end = start;
@@ -77,16 +102,16 @@ class CoinMiner: public Miner{
     int diff = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
     while (diff <= 60 && found == false){
-      this->nonce = this->generateNonce();
-      this->generateHash(nonce, digest, this->tmstp);
-      int occur = this->countCOccurences(this->digest);
+      nonce = generateNonce();
+      generateHash(nonce, digest, tmstp);
+      int occur = countCOccurences(digest);
       end = std::chrono::system_clock::now();
       diff = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
       if (occur == 6){
-        this->printBenchmark(this->nonce, diff);
+        printBenchmark(nonce, diff);
         found = true;
       }
-      free(this->nonce);
+      free(nonce);
     }
     if (found == false){
       throw 59;
@@ -94,36 +119,22 @@ class CoinMiner: public Miner{
   }
 
   private:
-  void generateHash(char* nonce, unsigned char* digest, int tmstp){
-    char tmpstptos[11];
-    tmpstptos[0] = '\0';
-    sprintf(tmpstptos, "%d", tmstp);
-    strcat(nonce, "-FLY-CC1.0-");
-    strcat(nonce, tmpstptos);
-    strcat(nonce, "-0f0f0f");
-    
+  inline void generateHash(char* nonce, unsigned char* digest, int tmstp){
+    strcat(nonce, endToken);
     SHA1((const unsigned char*)nonce, strlen((const char*)nonce), digest);
   }
 
   char* generateNonce(){
-    char c; 
     char* nonce =(char*) malloc(61);
     nonce[0] = '\0';
     for (int i = 0; i<32 ; i++){
-      c=RandInt('!', '~');
-      append(nonce, c);
+      append(nonce, RandInt('!', '~'));
     }
     return nonce;
   }
 
   void printBenchmark(char* nonce, int seconds){
-    vector<string> coinName;
-    coinName.push_back("Subcoin"); 
-    coinName.push_back("Coin"); 
-    coinName.push_back("Hexcoin"); 
-    coinName.push_back("Arkenstone"); 
-    coinName.push_back("Blackstar"); 
-    coinName.push_back("Grand Cross"); 
+    vector<string> coinName = {"Subcoin", "Coin", "Hexcoin", "Arkenstone", "Blackstar", "Grand Cross"};
     printf("6c (subcoin) mined in %d s : %s\n", seconds, nonce);
     printf(" *** Mining projection *** \n" );
     for (int i = 0; i<6; i++){
@@ -142,17 +153,20 @@ class CoinMiner: public Miner{
 
 int main(int argc, char* argv[]) {
 
-  if (argc == 2 && strcmp(argv[1], "-z") == 0) {
+  if (argc == 5 && strcmp(argv[1], "-t") == 0 && strcmp(argv[3], "-m") == 0 ){
+    CoinMiner cm(argv[2]);
+    cm.mine(atoi(argv[4]));
+  } else if (argc == 2 && strcmp(argv[1], "-z") == 0) {
     std::srand(std::time(0));
-    CoinMiner cm;
     try {
+    CoinMiner cm;
       cm.benchmark();
     } catch(int notfound){
       cout << "Unfortunately no Subcoin were found during this benchmark, please try again\n" ;
     }
 
   }else{
-    printf("only available use is ./coinminer -z\n");
+    printf("only available uses are ./coinminer -z or ./coinminer -t <triown> -m <minimum c to print a token>\n");
   }
 
   return 0;

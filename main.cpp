@@ -83,7 +83,7 @@ int main() {
 
   // bool found = false;
   // while (found == false){
-  int i =0;
+  // int i =0;
   // while (i<20){
   while (true){
     nonce = generateNonce();
@@ -91,13 +91,13 @@ int main() {
 
 
     int occur = countCOccurences(digest);
-    if (occur >7){
+    if (occur >9){
       printf("%s", nonce);
       printf("\n");
       printDigest(digest);
       // found = true;
     }
-    i++;
+    // i++;
     free(nonce);
 
   }
