@@ -22,9 +22,10 @@ class Miner{
 
   public:
   int tmstp=0;
-  unsigned char* digest;
+  unsigned char digest[SHA_DIGEST_LENGTH];
   char* nonce;
   char endToken[29];
+  vector<string> coinName;
 
   void mine(int minToPrint);
   void benchmark();
@@ -52,7 +53,7 @@ class Miner{
 
   private:
   char* generateNonce();
-  unsigned char* generateHash(char* nonce, unsigned char* digest, int tmstp);
+  unsigned char* generateHash();
   void printBenchmark(char* nonce, int seconds);
   void printDigest(unsigned char* digest);
 };
@@ -62,18 +63,15 @@ class CoinMiner: public Miner{
   public:
   CoinMiner(){
     tmstp = std::chrono::milliseconds(std::time(NULL)).count();
-    unsigned char d[SHA_DIGEST_LENGTH];
-    digest = d;
     endToken[0]= '\0';
     strcat(endToken, "-FLY-CC1.0-");
     char* p = &(endToken[11]);
     sprintf(p, "%d", tmstp);
     strcat(endToken, "-0f0f0f");
+    coinName = {"Subcoin", "Coin", "Hexcoin", "Arkenstone", "Blackstar", "Grand Cross"};
   }
   CoinMiner(char* tri){
     tmstp = std::chrono::milliseconds(std::time(NULL)).count();
-    unsigned char d[SHA_DIGEST_LENGTH];
-    digest = d;
     endToken[0]= '\0';
     strcat(endToken, "-");
     strcat(endToken, tri);
@@ -85,14 +83,14 @@ class CoinMiner: public Miner{
   void mine(int minToPrint){
     printf("%d", minToPrint);
     while(true){
-      nonce = this->generateNonce();
-      generateHash(nonce, digest, tmstp);
-      int occur = countCOccurences(digest);
+      this->nonce = this->generateNonce();
+      this->generateHash(this->digest);
+      int occur = this->countCOccurences(this->digest);
       if (occur >= minToPrint){
-        printf("%s\n",nonce);
-        printDigest(digest);
+        printf("%s\n",this->nonce);
+        printDigest(this->digest);
       }
-      free(nonce);
+      free(this->nonce);
     }
   }
   void benchmark(){
@@ -100,28 +98,31 @@ class CoinMiner: public Miner{
     auto end = start;
     bool found = false;
     int diff = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-
+    int i = 0;
     while (diff <= 60 && found == false){
-      nonce = generateNonce();
-      generateHash(nonce, digest, tmstp);
-      int occur = countCOccurences(digest);
+      this->nonce = this->generateNonce();
+      this->generateHash(this->digest);
+      int occur = this->countCOccurences(digest);
       end = std::chrono::system_clock::now();
       diff = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+      i++;
       if (occur == 6){
-        printBenchmark(nonce, diff);
+        this->printDigest(this->digest);
+        this->printBenchmark(nonce, diff);
         found = true;
       }
       free(nonce);
     }
+    printf("hashed %d time \n", i);
     if (found == false){
       throw 59;
     }
   }
 
   private:
-  inline void generateHash(char* nonce, unsigned char* digest, int tmstp){
-    strcat(nonce, endToken);
-    SHA1((const unsigned char*)nonce, strlen((const char*)nonce), digest);
+  inline void generateHash(unsigned char* digest){
+    strcat(this->nonce, this->endToken);
+    SHA1((const unsigned char*)this->nonce, strlen((const char*)this->nonce), digest);
   }
 
   char* generateNonce(){
@@ -134,7 +135,6 @@ class CoinMiner: public Miner{
   }
 
   void printBenchmark(char* nonce, int seconds){
-    vector<string> coinName = {"Subcoin", "Coin", "Hexcoin", "Arkenstone", "Blackstar", "Grand Cross"};
     printf("6c (subcoin) mined in %d s : %s\n", seconds, nonce);
     printf(" *** Mining projection *** \n" );
     for (int i = 0; i<6; i++){
@@ -153,13 +153,13 @@ class CoinMiner: public Miner{
 
 int main(int argc, char* argv[]) {
 
+  std::srand(std::time(0));
   if (argc == 5 && strcmp(argv[1], "-t") == 0 && strcmp(argv[3], "-m") == 0 ){
     CoinMiner cm(argv[2]);
     cm.mine(atoi(argv[4]));
   } else if (argc == 2 && strcmp(argv[1], "-z") == 0) {
-    std::srand(std::time(0));
     try {
-    CoinMiner cm;
+      CoinMiner cm;
       cm.benchmark();
     } catch(int notfound){
       cout << "Unfortunately no Subcoin were found during this benchmark, please try again\n" ;
