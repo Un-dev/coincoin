@@ -29,7 +29,7 @@ class Miner{
 
   void mine(int minToPrint);
   void benchmark();
-  int countCOccurences(unsigned char* digest){
+  int countCOccurences(){
     char* hexDigest =(char *)malloc(SHA_DIGEST_LENGTH*2+1);
     hexDigest[0] = '\0';
     char curr[41];
@@ -37,7 +37,7 @@ class Miner{
 
     int i;
     for (i = 0; i < SHA_DIGEST_LENGTH; i++){
-      sprintf(curr, "%02x", digest[i]);
+      sprintf(curr, "%02x", this->digest[i]);
       append(hexDigest, curr[0]);
       append(hexDigest, curr[1]);
     }
@@ -55,7 +55,7 @@ class Miner{
   char* generateNonce();
   unsigned char* generateHash();
   void printBenchmark(char* nonce, int seconds);
-  void printDigest(unsigned char* digest);
+  void printDigest();
 };
 
 class CoinMiner: public Miner{
@@ -81,14 +81,13 @@ class CoinMiner: public Miner{
     strcat(endToken, "-0f0f0f");    
   }
   void mine(int minToPrint){
-    printf("%d", minToPrint);
     while(true){
       this->nonce = this->generateNonce();
-      this->generateHash(this->digest);
-      int occur = this->countCOccurences(this->digest);
+      this->generateHash();
+      int occur = this->countCOccurences();
       if (occur >= minToPrint){
         printf("%s\n",this->nonce);
-        printDigest(this->digest);
+        printDigest();
       }
       free(this->nonce);
     }
@@ -97,17 +96,17 @@ class CoinMiner: public Miner{
     auto start = std::chrono::system_clock::now();
     auto end = start;
     bool found = false;
-    int diff = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+    int diff = 0;
     int i = 0;
     while (diff <= 60 && found == false){
       this->nonce = this->generateNonce();
-      this->generateHash(this->digest);
-      int occur = this->countCOccurences(digest);
+      this->generateHash();
+      int occur = this->countCOccurences();
       end = std::chrono::system_clock::now();
       diff = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
       i++;
       if (occur == 6){
-        this->printDigest(this->digest);
+        this->printDigest();
         this->printBenchmark(nonce, diff);
         found = true;
       }
@@ -120,9 +119,9 @@ class CoinMiner: public Miner{
   }
 
   private:
-  inline void generateHash(unsigned char* digest){
+  inline void generateHash(){
     strcat(this->nonce, this->endToken);
-    SHA1((const unsigned char*)this->nonce, strlen((const char*)this->nonce), digest);
+    SHA1((const unsigned char*)this->nonce, strlen((const char*)this->nonce), this->digest);
   }
 
   char* generateNonce(){
@@ -143,7 +142,7 @@ class CoinMiner: public Miner{
     }
   }
 
-  void printDigest(unsigned char* digest){
+  void printDigest(){
     for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
       printf("%02x", digest[i]);
     }
