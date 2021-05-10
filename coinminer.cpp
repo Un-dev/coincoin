@@ -12,8 +12,7 @@ using namespace std::chrono;
 
 inline int RandInt(int low, int high) {return low + std::rand() % (high - low + 1);}
 
-inline void append(char* s, char c) {
-  int len = strlen(s);
+inline void append(char* s, char c, int& len) {
   s[len] = c; s[len+1] = '\0';
 }
 
@@ -36,10 +35,15 @@ class Miner{
     curr[0] = '\0';
 
     int i;
-    for (i = 0; i < SHA_DIGEST_LENGTH; i++){
+    int len;
+    for (i=0 ; i < SHA_DIGEST_LENGTH; i++){
       sprintf(curr, "%02x", this->digest[i]);
-      append(hexDigest, curr[0]);
-      append(hexDigest, curr[1]);
+      len = i*2;
+      // len = strlen(hexDigest);
+      // printf("%d %d %d\n", len, i, i*2);
+      append(hexDigest, curr[0], len);
+      len++;
+      append(hexDigest, curr[1], len);
     }
     i=0;
     char hexC[2];
@@ -102,13 +106,16 @@ class CoinMiner: public Miner{
       this->nonce = this->generateNonce();
       this->generateHash();
       int occur = this->countCOccurences();
+      // printf("%s\n", nonce);
+      // this->printDigest();
+      // printf("%d\n", occur);
       end = std::chrono::system_clock::now();
       diff = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
       i++;
       if (occur == 6){
         this->printDigest();
         this->printBenchmark(nonce, diff);
-        found = true;
+        // found = true;
       }
       free(nonce);
     }
@@ -128,7 +135,7 @@ class CoinMiner: public Miner{
     char* nonce =(char*) malloc(61);
     nonce[0] = '\0';
     for (int i = 0; i<32 ; i++){
-      append(nonce, RandInt('!', '~'));
+      append(nonce, RandInt('!', '~'), i);
     }
     return nonce;
   }
