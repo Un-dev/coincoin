@@ -83,6 +83,7 @@ class CoinMiner: public Miner{
     char* p = &(endToken[11]);
     sprintf(p, "%d", tmstp);
     strcat(endToken, "-0f0f0f");    
+    coinName = {"Subcoin", "Coin", "Hexcoin", "Arkenstone", "Blackstar", "Grand Cross"};
   }
   void mine(int minToPrint){
     while(true){
@@ -90,8 +91,11 @@ class CoinMiner: public Miner{
       this->generateHash();
       int occur = this->countCOccurences();
       if (occur >= minToPrint){
-        printf("%s\n",this->nonce);
-        printDigest();
+        if (occur>5){
+          cout << occur << "c (" << coinName[occur-6]<< ") : " << this->nonce <<"\n";
+        } else {
+          cout << occur << "c (Miette): " << this->nonce <<"\n";
+        }
       }
       free(this->nonce);
     }
@@ -106,9 +110,6 @@ class CoinMiner: public Miner{
       this->nonce = this->generateNonce();
       this->generateHash();
       int occur = this->countCOccurences();
-      // printf("%s\n", nonce);
-      // this->printDigest();
-      // printf("%d\n", occur);
       end = std::chrono::system_clock::now();
       diff = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
       i++;
